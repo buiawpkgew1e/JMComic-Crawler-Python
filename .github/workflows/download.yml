@@ -69,5 +69,4 @@ jobs:
           automatic_release_tag: "1"
           prerelease: true
           title: "finder-result"
-          files: |
-            /home/runner/work/jmcomic/download/*
+          files: ${{ env.JM_DOWNLOAD_DIR }}/${{ env.ZIP_NAME }}
