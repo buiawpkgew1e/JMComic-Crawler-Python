@@ -54,10 +54,20 @@ jobs:
           tar -zcvf "../$ZIP_NAME" ./
           mv "../$ZIP_NAME" .
 
-      - name: 上传结果
-        uses: actions/upload-artifact@v3
+      # - name: 上传结果
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: ${{ env.UPLOAD_NAME }}
+      #     path: ${{ env.JM_DOWNLOAD_DIR }}/${{ env.ZIP_NAME }}
+      #     if-no-files-found: warn
+      #     retention-days: 90
+
+      - name: 自动释放
+        uses: marvinpinto/action-automatic-releases@v1.2.1
         with:
-          name: ${{ env.UPLOAD_NAME }}
-          path: ${{ env.JM_DOWNLOAD_DIR }}/${{ env.ZIP_NAME }}
-          if-no-files-found: warn
-          retention-days: 90
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "1"
+          prerelease: true
+          title: "finder-result"
+          files: |
+            /home/runner/work/jmcomic/download/*
