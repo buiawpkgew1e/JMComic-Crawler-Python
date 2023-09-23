@@ -68,6 +68,9 @@ class JmModuleConfig:
     CLASS_CLIENT_IMPL = {}
     CLASS_EXCEPTION = None
 
+    # 插件注册表
+    PLUGIN_REGISTRY = {}
+
     # 执行debug的函数
     debug_executor = default_jm_debug
     # postman构造函数
@@ -79,9 +82,6 @@ class JmModuleConfig:
     enable_jm_debug = True
     # debug时解码url
     decode_url_when_debug = True
-
-    # 插件注册表
-    plugin_registry = {}
 
     @classmethod
     def downloader_class(cls):
@@ -243,7 +243,7 @@ class JmModuleConfig:
     default_option_dict: dict = {
         'version': '2.0',
         'debug': None,
-        'dir_rule': {'rule': 'Bd_Ptitle', 'base_dir': None},
+        'dir_rule': {'rule': 'Bd_Pname', 'base_dir': None},
         'download': {
             'cache': True,
             'image': {'decode': True, 'suffix': None},
@@ -271,7 +271,9 @@ class JmModuleConfig:
         返回JmOption.default()的默认配置字典。
         这样做是为了支持外界自行覆盖option默认配置字典
         """
-        option_dict = cls.default_option_dict.copy()
+        from copy import deepcopy
+
+        option_dict = deepcopy(cls.default_option_dict)
 
         # debug
         if option_dict['debug'] is None:
@@ -297,7 +299,7 @@ class JmModuleConfig:
 
     @classmethod
     def register_plugin(cls, plugin_class):
-        cls.plugin_registry[plugin_class.plugin_key] = plugin_class
+        cls.PLUGIN_REGISTRY[plugin_class.plugin_key] = plugin_class
 
     @classmethod
     def register_client(cls, client_class):

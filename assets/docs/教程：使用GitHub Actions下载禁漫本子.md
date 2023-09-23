@@ -24,7 +24,7 @@
 
 访问下面这个网址：
 
-`https://github.com/hect0x7/JMComic-Crawler-Python/actions/workflows/download_dispatch.yml`
+`https://github.com/你的用户名/JMComic-Crawler-Python/actions/workflows/download_dispatch.yml`
 
 按下图步骤进行操作：
 
@@ -61,7 +61,6 @@
 ![4](./images/4.png)
 
 如果你发现GitHub Actions显示❌，表明出现了问题，运行失败。
-
 
 下面是问题的排查步骤：
 

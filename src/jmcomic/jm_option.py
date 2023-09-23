@@ -130,11 +130,11 @@ class JmOption:
         # 路径规则配置
         self.dir_rule = DirRule(**dir_rule)
         # 请求配置
-        self.client = DictModel(client)
+        self.client = AdvancedEasyAccessDict(client)
         # 下载配置
-        self.download = DictModel(download)
+        self.download = AdvancedEasyAccessDict(download)
         # 插件配置
-        self.plugin = DictModel(plugin)
+        self.plugin = AdvancedEasyAccessDict(plugin)
         # 其他配置
         self.filepath = filepath
 
@@ -219,6 +219,29 @@ class JmOption:
     """
 
     @classmethod
+    def default_dict(cls) -> Dict:
+        return JmModuleConfig.option_default_dict()
+
+    @classmethod
+    def default(cls, proxies=None, domain=None) -> 'JmOption':
+        """
+        使用默认的 JmOption
+        proxies, domain 为常用配置项，为了方便起见直接支持参数配置。
+        其他配置项建议还是使用配置文件
+        @param proxies: clash; 127.0.0.1:7890; v2ray
+        @param domain: 18comic.vip; ["18comic.vip"]
+        """
+        if proxies is not None or domain is not None:
+            return cls.construct({
+                'client': {
+                    'domain': [domain] if isinstance(domain, str) else domain,
+                    'postman': {'meta_data': {'proxies': ProxyBuilder.build_by_str(proxies)}},
+                },
+            })
+
+        return cls.construct({})
+
+    @classmethod
     def construct(cls, dic: Dict, cover_default=True) -> 'JmOption':
         if cover_default:
             dic = cls.merge_default_dict(dic)
@@ -286,7 +309,10 @@ class JmOption:
         postman = Postmans.create(data=postman_conf)
 
         # domain_list
-        domain_list: List[str] = domain_list or self.client.domain
+        if domain_list is None:
+            domain_list = self.client.domain
+
+        domain_list: List[str]
         if len(domain_list) == 0:
             domain_list = [JmModuleConfig.domain()]
 
@@ -302,14 +328,6 @@ class JmOption:
             client.enable_cache()
 
         return client
-
-    @classmethod
-    def default_dict(cls) -> Dict:
-        return JmModuleConfig.option_default_dict()
-
-    @classmethod
-    def default(cls):
-        return cls.construct({})
 
     @classmethod
     def merge_default_dict(cls, user_dict, default_dict=None):
@@ -346,7 +364,7 @@ class JmOption:
         # 保证 jm_plugin.py 被加载
         from .jm_plugin import JmOptionPlugin
 
-        plugin_registry = JmModuleConfig.plugin_registry
+        plugin_registry = JmModuleConfig.PLUGIN_REGISTRY
         for pinfo in plugin_list:
             key, kwargs = pinfo['plugin'], pinfo['kwargs']
             plugin_class: Optional[Type[JmOptionPlugin]] = plugin_registry.get(key, None)
