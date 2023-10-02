@@ -1,9 +1,12 @@
-# GitHub Actions 下载脚本配置
-dir_rule:
-  base_dir: ${JM_DOWNLOAD_DIR}
-  rule: Bd_Aauthor_Atitle_Pindex
+# GitHub Actions 测试用
+# 网页端配置
 
 client:
+  impl: html
+  retry_times: 3
+  postman:
+    meta_data:
+      timeout: 5
   domain:
     - jmcomic1.me
     - jmcomic.me
