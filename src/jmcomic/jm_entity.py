@@ -452,9 +452,6 @@ class JmSearchPage(JmBaseEntity, IndexedEntity):
     def is_single_album(self):
         return hasattr(self, 'album')
 
-    def __iter__(self) -> Generator[List[str], Any, None]:
-        return super().__iter__()
-
     @property
     def single_album(self) -> JmAlbumDetail:
         return getattr(self, 'album')

@@ -231,7 +231,7 @@ class JmHtmlClient(AbstractJmClient):
             album = JmcomicText.analyse_jm_album_html(resp.text)
             return JmSearchPage.wrap_single_album(album)
         else:
-            return JmSearchSupport.analyse_jm_search_html(resp.text)
+            return JmcomicText.analyse_jm_search_html(resp.text)
 
     # -- 帐号管理 --
 
