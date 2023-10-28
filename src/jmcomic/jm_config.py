@@ -26,6 +26,11 @@ def system_proxy():
     return ProxyBuilder.system_proxy()
 
 
+def str_to_list(text):
+    from common import str_to_list
+    return str_to_list(text)
+
+
 class JmcomicException(Exception):
     pass
 
@@ -63,14 +68,25 @@ class JmModuleConfig:
 
     # 域名配置 - 移动端
     # 图片域名
-    DOMAIN_API_IMAGE_LIST = [f"cdn-msp.jmapiproxy{i}.cc" for i in range(1, 4)]
+    DOMAIN_API_IMAGE_LIST = str_to_list('''
+    cdn-msp.jmapiproxy1.monster
+    cdn-msp2.jmapiproxy1.monster
+    cdn-msp.jmapiproxy1.cc
+    cdn-msp.jmapiproxy2.cc
+    cdn-msp.jmapiproxy3.cc
+    cdn-msp.jmapiproxy4.cc
+
+    ''')
+
     # API域名
-    DOMAIN_API_LIST = [
-        "www.jmapinode1.cc",
-        "www.jmapinode2.cc",
-        "www.jmapinode3.cc",
-        "www.jmapibranch2.cc",
-    ]
+    DOMAIN_API_LIST = str_to_list('''
+    www.jmapinode1.top
+    www.jmapinode2.top
+    www.jmapinode3.top
+    www.jmapinode.biz
+    www.jmapinode.top
+    
+    ''')
 
     # 域名配置 - 网页端
     # 无需配置，默认为None，需要的时候会发起请求获得
@@ -101,7 +117,7 @@ class JmModuleConfig:
     # debug时解码url
     decode_url_when_debug = True
     # 下载时的一些默认值配置
-    default_author = 'default-author'
+    DEFAULT_AUTHOR = 'default-author'
 
     @classmethod
     def downloader_class(cls):
@@ -169,7 +185,7 @@ class JmModuleConfig:
     def get_html_url(cls, postman=None):
         """
         访问禁漫的永久网域，从而得到一个可用的禁漫网址
-        @return: https://jm-comic2.cc
+        :returns: https://jm-comic2.cc
         """
         postman = postman or cls.new_postman(session=True)
 
@@ -183,7 +199,7 @@ class JmModuleConfig:
         """
         访问禁漫发布页，得到所有的禁漫网页域名
 
-        @return: ['18comic.vip', ..., 'jm365.xyz/ZNPJam'], 最后一个是【APP軟件下載】
+        :returns: ['18comic.vip', ..., 'jm365.xyz/ZNPJam'], 最后一个是【APP軟件下載】
         """
         postman = postman or cls.new_postman(session=True)
 
@@ -199,7 +215,10 @@ class JmModuleConfig:
         return domain_list
 
     @classmethod
-    def headers(cls, domain='18comic.vip'):
+    def new_html_headers(cls, domain='18comic.vip'):
+        """
+        网页端的headers
+        """
         return {
             'authority': domain,
             'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,'
@@ -218,6 +237,33 @@ class JmModuleConfig:
                           'Safari/537.36',
         }
 
+    @classmethod
+    def new_api_headers(cls, key_ts):
+        """
+        根据key_ts生成移动端的headers
+        """
+        if key_ts is None:
+            from common import time_stamp
+            key_ts = time_stamp()
+
+        import hashlib
+        token = hashlib.md5(f"{key_ts}{cls.MAGIC_18COMICAPPCONTENT}".encode()).hexdigest()
+
+        return {
+            'token': token,
+            'tokenparam': f"{key_ts},1.6.0",
+            'User-Agent': 'Mozilla/5.0 (Linux; Android 9; V1938CT Build/PQ3A.190705.09211555; wv) AppleWebKit/537.36 (KHTML, '
+                          'like Gecko) Version/4.0 Chrome/91.0.4472.114 Safari/537.36',
+            'X-Requested-With': 'com.jiaohua_browser',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,'
+                      'application/signed-exchange;v=b3;q=0.9',
+            'Sec-Fetch-Site': 'none',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-User': '?1',
+            'Sec-Fetch-Dest': 'document',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en-US;q=0.8,en;q=0.7',
+        }
+
     # noinspection PyUnusedLocal
     @classmethod
     def jm_debug(cls, topic: str, msg: str):
@@ -231,7 +277,8 @@ class JmModuleConfig:
     @classmethod
     def new_postman(cls, session=False, **kwargs):
         kwargs.setdefault('impersonate', 'chrome110')
-        kwargs.setdefault('headers', JmModuleConfig.headers())
+        kwargs.setdefault('headers', JmModuleConfig.new_html_headers())
+        kwargs.setdefault('proxies', JmModuleConfig.DEFAULT_PROXIES)
         return cls.postman_constructor(session, **kwargs)
 
     album_comment_headers = {
@@ -256,11 +303,10 @@ class JmModuleConfig:
 
     # option 相关的默认配置
     JM_OPTION_VER = '2.1'
-    CLIENT_IMPL_DEFAULT = 'html'
+    DEFAULT_CLIENT_IMPL = 'html'
     DEFAULT_PROXIES = system_proxy()  # use system proxy by default
 
     default_option_dict: dict = {
-        'version': JM_OPTION_VER,
         'debug': None,
         'dir_rule': {'rule': 'Bd_Pname', 'base_dir': None},
         'download': {
@@ -285,7 +331,7 @@ class JmModuleConfig:
             'impl': None,
             'retry_times': 5
         },
-        'plugin': {},
+        'plugins': {},
     }
 
     @classmethod
@@ -315,7 +361,7 @@ class JmModuleConfig:
 
         # client impl
         if client['impl'] is None:
-            client['impl'] = cls.CLIENT_IMPL_DEFAULT
+            client['impl'] = cls.DEFAULT_CLIENT_IMPL
 
         # postman proxies
         meta_data = client['postman']['meta_data']

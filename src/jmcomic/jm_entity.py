@@ -64,8 +64,8 @@ class DetailEntity(JmBaseEntity, IndexedEntity):
 
         用户可重写此方法，来实现自定义文件夹名
 
-        @param ref: 字段名
-        @return: 文件夹名
+        :param ref: 字段名
+        :returns: 文件夹名
         """
         return getattr(self, ref)
 
@@ -94,8 +94,11 @@ class JmImageDetail(JmBaseEntity):
 
         self.from_photo: Optional[JmPhotoDetail] = from_photo
         self.query_params: StrNone = query_params
-        self.is_exists: bool = False
         self.index = index
+
+        # temp fields, in order to simplify passing parameter
+        self.save_path: str = ''
+        self.is_exists: bool = False
 
     @property
     def filename_without_suffix(self):
@@ -110,7 +113,7 @@ class JmImageDetail(JmBaseEntity):
         """
         图片的下载路径
         与 self.img_url 的唯一不同是，在最后会带上 ?{self.query_params}
-        @return: 图片的下载路径
+        :returns: 图片的下载路径
         """
         if self.query_params is None:
             return self.img_url
@@ -250,7 +253,7 @@ class JmPhotoDetail(DetailEntity):
             return self._author.strip()
 
         # 使用默认
-        return JmModuleConfig.default_author
+        return JmModuleConfig.DEFAULT_AUTHOR
 
     def create_image_detail(self, index) -> JmImageDetail:
         # 校验参数
@@ -364,7 +367,7 @@ class JmAlbumDetail(DetailEntity):
         if len(self.authors) >= 1:
             return self.authors[0]
 
-        return JmModuleConfig.default_author
+        return JmModuleConfig.DEFAULT_AUTHOR
 
     @property
     def id(self):
@@ -422,11 +425,17 @@ class JmAlbumDetail(DetailEntity):
 class JmSearchPage(JmBaseEntity, IndexedEntity):
     ContentItem = Tuple[str, Dict[str, Any]]
 
-    def __init__(self, content: List[ContentItem]):
-        # [
-        #   album_id, {title, tag_list, ...}
-        # ]
+    def __init__(self, content: List[ContentItem], page_count):
+
+        """
+        [
+          album_id, {title, tag_list, ...}
+        ]
+        :param content: 搜索结果，移动端和网页端都一次返回80个
+        :param page_count: 总页数，登录和不登录能看到的总页数不一样
+        """
         self.content = content
+        self.page_count = page_count
 
     def iter_id(self) -> Generator[str, None, None]:
         """
@@ -466,7 +475,7 @@ class JmSearchPage(JmBaseEntity, IndexedEntity):
                 'name': album.name,
                 'tag_list': album.tags,
             }
-        )])
+        )], -1)
         setattr(page, 'album', album)
         return page
 

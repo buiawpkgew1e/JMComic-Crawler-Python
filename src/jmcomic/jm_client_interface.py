@@ -176,7 +176,7 @@ class JmDetailClient:
         本方法会检查photo是不是[1]，
         如果是[1]，通过请求获取[2]，然后把2中的一些重要字段更新到1中
 
-        @param photo: 被检查的JmPhotoDetail对象
+        :param photo: 被检查的JmPhotoDetail对象
         """
         # 检查 from_album
         if photo.from_album is None:
@@ -210,12 +210,12 @@ class JmUserClient:
                       ) -> JmAcResp:
         """
         评论漫画/评论回复
-        @param video_id: album_id/photo_id
-        @param comment: 评论内容
-        @param status: 是否 "有劇透"
-        @param comment_id: 被回复评论的id
-        @param originator:
-        @return: JmAcResp 对象
+        :param video_id: album_id/photo_id
+        :param comment: 评论内容
+        :param status: 是否 "有劇透"
+        :param comment_id: 被回复评论的id
+        :param originator:
+        :returns: JmAcResp 对象
         """
         raise NotImplementedError
 
@@ -232,10 +232,10 @@ class JmImageClient:
                        ):
         """
         下载JM的图片
-        @param img_url: 图片url
-        @param img_save_path: 图片保存位置
-        @param scramble_id: 图片所在photo的scramble_id
-        @param decode_image: 要保存的是解密后的图还是原图
+        :param img_url: 图片url
+        :param img_save_path: 图片保存位置
+        :param scramble_id: 图片所在photo的scramble_id
+        :param decode_image: 要保存的是解密后的图还是原图
         """
         if scramble_id is None:
             scramble_id = JmModuleConfig.SCRAMBLE_220980
@@ -370,6 +370,69 @@ class JmSearchAlbumClient:
         搜索album的登场角色 actor
         """
         return self.search(search_query, page, 4, order_by, time)
+
+    def search_gen(self,
+                   search_query: str,
+                   main_tag=0,
+                   page: int = 1,
+                   order_by: str = ORDER_BY_LATEST,
+                   time: str = TIME_ALL,
+                   ):
+        """
+        搜索结果的生成器，支持下面这种调用方式：
+
+        ```
+        for page in self.search_gen('无修正'):
+            # 每次循环，page为新页的结果
+            pass
+        ```
+
+        同时支持外界send参数，可以改变搜索的设定，例如：
+
+        ```
+        gen = client.search_gen('MANA')
+        for i, page in enumerate(gen):
+            print(page.page_count)
+            page = gen.send({
+                'search_query': '+MANA +无修正',
+                'page': 1
+            })
+            print(page.page_count)
+            break
+        ```
+
+        """
+        params = {
+            'search_query': search_query,
+            'main_tag': main_tag,
+            'order_by': order_by,
+            'time': time,
+        }
+
+        def search(page):
+            params['page'] = page
+            return self.search(**params)
+
+        from math import inf
+
+        def update(value: Union[Dict], page: int, search_page: JmSearchPage):
+            if value is None:
+                return page + 1, search_page.page_count
+
+            ExceptionTool.require_true(isinstance(value, dict), 'require dict params')
+
+            # 根据外界传递的参数，更新params和page
+            page = value.get('page', page)
+            params.update(value)
+
+            return page, inf
+
+        total = inf
+
+        while page <= total:
+            search_page = search(page)
+            value = yield search_page
+            page, total = update(value, page, search_page)
 
 
 # noinspection PyAbstractClass

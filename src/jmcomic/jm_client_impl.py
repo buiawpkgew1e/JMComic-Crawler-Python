@@ -61,12 +61,12 @@ class AbstractJmClient(
                            ):
         """
         统一请求，支持重试
-        @param request: 请求方法
-        @param url: 图片url / path (/album/xxx)
-        @param domain_index: 域名下标
-        @param retry_count: 重试次数
-        @param judge: 判定响应是否成功
-        @param kwargs: 请求方法的kwargs
+        :param request: 请求方法
+        :param url: 图片url / path (/album/xxx)
+        :param domain_index: 域名下标
+        :param retry_count: 重试次数
+        :param judge: 判定响应是否成功
+        :param kwargs: 请求方法的kwargs
         """
         if domain_index >= len(self.domain_list):
             self.fallback(request, url, domain_index, retry_count, **kwargs)
@@ -210,14 +210,14 @@ class JmHtmlClient(AbstractJmClient):
                page: int,
                main_tag: int,
                order_by: str,
-               date: str,
+               time: str,
                ) -> JmSearchPage:
         params = {
             'main_tag': main_tag,
             'search_query': search_query,
             'page': page,
             'o': order_by,
-            't': date,
+            't': time,
         }
 
         resp = self.get_jm_html(
@@ -335,15 +335,15 @@ class JmHtmlClient(AbstractJmClient):
         return ret
 
     @classmethod
-    def require_resp_success_else_raise(cls, resp, org_req_url: str):
+    def require_resp_success_else_raise(cls, resp, orig_req_url: str):
         """
-        @param resp: 响应对象
-        @param org_req_url: /photo/12412312
+        :param resp: 响应对象
+        :param orig_req_url: /photo/12412312
         """
         # 1. 检查是否 album_missing
         error_album_missing = '/error/album_missing'
-        if resp.url.endswith(error_album_missing) and not org_req_url.endswith(error_album_missing):
-            ExceptionTool.raise_missing(resp, org_req_url)
+        if resp.url.endswith(error_album_missing) and not orig_req_url.endswith(error_album_missing):
+            ExceptionTool.raise_missing(resp, orig_req_url)
 
         # 2. 是否是特殊的内容
         cls.check_special_text(resp)
@@ -401,16 +401,15 @@ class JmApiClient(AbstractJmClient):
                order_by: str,
                time: str,
                ) -> JmSearchPage:
-        resp = self.get_decode(
-            self.API_SEARCH,
-            params={
-                'search_query': search_query,
-                'main_tag': main_tag,
-                'page': page,
-                'o': order_by,
-                't': time,
-            }
-        )
+        params = {
+            'main_tag': main_tag,
+            'search_query': search_query,
+            'page': page,
+            'o': order_by,
+            't': time,
+        }
+
+        resp = self.get_decode(self.append_params_to_url(self.API_SEARCH, params))
 
         # 直接搜索禁漫车号，发生重定向的响应数据 resp.model_data
         # {
@@ -424,7 +423,7 @@ class JmApiClient(AbstractJmClient):
             aid = data.redirect_aid
             return JmSearchPage.wrap_single_album(self.get_album_detail(aid))
 
-        return JmcomicSearchTool.parse_api_resp_to_page(data)
+        return JmSearchTool.parse_api_resp_to_page(data)
 
     def get_album_detail(self, album_id) -> JmAlbumDetail:
         return self.fetch_detail_entity(album_id,
@@ -484,7 +483,7 @@ class JmApiClient(AbstractJmClient):
                 "id": photo_id,
                 "mode": "vertical",
                 "page": "0",
-                "app_img_shunt": "NaN",
+                "app_img_shunt": "1",
             }
         )
 
@@ -517,6 +516,64 @@ class JmApiClient(AbstractJmClient):
         if fetch_scramble_id:
             photo.scramble_id = self.get_scramble_id(photo.album_id)
 
+    def setting(self) -> JmApiResp:
+        """
+        禁漫app的setting请求，返回如下内容（resp.res_data）
+        {
+          "logo_path": "https://cdn-msp.jmapiproxy1.monster/media/logo/new_logo.png",
+          "main_web_host": "18-comic.work",
+          "img_host": "https://cdn-msp.jmapiproxy1.monster",
+          "base_url": "https://www.jmapinode.biz",
+          "is_cn": 0,
+          "cn_base_url": "https://www.jmapinode.biz",
+          "version": "1.6.0",
+          "test_version": "1.6.1",
+          "store_link": "https://play.google.com/store/apps/details?id=com.jiaohua_browser",
+          "ios_version": "1.6.0",
+          "ios_test_version": "1.6.1",
+          "ios_store_link": "https://18comic.vip/stray/",
+          "ad_cache_version": 1698140798,
+          "bundle_url": "https://18-comic.work/static/apk/patches1.6.0.zip",
+          "is_hot_update": true,
+          "api_banner_path": "https://cdn-msp.jmapiproxy1.monster/media/logo/channel_log.png?v=",
+          "version_info": "\nAPP & IOS更新\nV1.6.0\n#禁漫 APK 更新拉!!\n更新調整以下項目\n1. 系統優化\n\nV1.5.9\n1. 跳錯誤新增 重試 網頁 按鈕\n2. 圖片讀取優化\n3.
+          線路調整優化\n\n無法順利更新或是系統題是有風險請使用下方\n下載點2\n有問題可以到DC群反饋\nhttps://discord.gg/V74p7HM\n",
+          "app_shunts": [
+            {
+              "title": "圖源1",
+              "key": 1
+            },
+            {
+              "title": "圖源2",
+              "key": 2
+            },
+            {
+              "title": "圖源3",
+              "key": 3
+            },
+            {
+              "title": "圖源4",
+              "key": 4
+            }
+          ],
+          "download_url": "https://18-comic.work/static/apk/1.6.0.apk",
+          "app_landing_page": "https://jm365.work/pXYbfA",
+          "float_ad": true
+        }
+        """
+        resp = self.get_decode('/setting')
+        return resp
+
+    def login(self,
+              username,
+              password,
+              refresh_client_cookies=True,
+              id_remember='on',
+              login_remember='on',
+              ):
+        jm_debug('api.login', '禁漫移动端无需登录，调用login不会做任何操作')
+        pass
+
     def get_decode(self, url, **kwargs) -> JmApiResp:
         # set headers
         headers, key_ts = self.headers_key_ts
@@ -528,27 +585,20 @@ class JmApiClient(AbstractJmClient):
     @property
     def headers_key_ts(self):
         key_ts = time_stamp()
-        import hashlib
-        token = hashlib.md5(f"{key_ts}{JmModuleConfig.MAGIC_18COMICAPPCONTENT}".encode()).hexdigest()
-        return {
-            "token": token,
-            "tokenparam": f"{key_ts},1.5.2",
-            "user-agent": "okhttp/3.12.1",
-            "accept-encoding": "gzip",
-        }, key_ts
+        return JmModuleConfig.new_api_headers(key_ts), key_ts
 
     def debug_topic_request(self):
         return 'api'
 
     @classmethod
-    def require_resp_success(cls, resp: JmApiResp, org_req_url: str):
+    def require_resp_success(cls, resp: JmApiResp, orig_req_url: str):
         resp.require_success()
 
         # 1. 检查是否 album_missing
         # json: {'code': 200, 'data': []}
         data = resp.model().data
         if isinstance(data, list) and len(data) == 0:
-            ExceptionTool.raise_missing(resp, org_req_url)
+            ExceptionTool.raise_missing(resp, orig_req_url)
 
         # 2. 是否是特殊的内容
         # 暂无
@@ -561,7 +611,7 @@ class FutureClientProxy(JmcomicClient):
 
     可通过插件 ClientProxyPlugin 启用本类，配置如下:
     ```yml
-    plugin:
+    plugins:
       after_init:
         - plugin: client_proxy
           kwargs:
