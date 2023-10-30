@@ -5,6 +5,13 @@
 from .jm_option import *
 
 
+class PluginValidationException(Exception):
+
+    def __init__(self, plugin: 'JmOptionPlugin', msg: str):
+        self.plugin = plugin
+        self.msg = msg
+
+
 class JmOptionPlugin:
     plugin_key: str
 
@@ -33,6 +40,15 @@ class JmOptionPlugin:
             msg=msg
         )
 
+    def require_true(self, case: Any, msg: str):
+        """
+        独立于ExceptionTool的一套异常抛出体系
+        """
+        if case:
+            return
+
+        raise PluginValidationException(self, msg)
+
 
 class JmLoginPlugin(JmOptionPlugin):
     """
@@ -44,8 +60,8 @@ class JmLoginPlugin(JmOptionPlugin):
                username: str,
                password: str,
                ) -> None:
-        if not (username and password):
-            return
+        self.require_true(username, '用户名不能为空')
+        self.require_true(password, '密码不能为空')
 
         client = self.option.new_jm_client()
         client.login(username, password)
@@ -233,26 +249,32 @@ class ZipPlugin(JmOptionPlugin):
         mkdir_if_not_exists(zip_dir)
 
         # 原文件夹 -> zip文件
-        dir_zip_dict = {}
+        dir_zip_dict: Dict[str, Optional[str]] = {}
         photo_dict = downloader.all_downloaded[album]
 
         if level == 'album':
             zip_path = self.get_zip_path(album, None, filename_rule, suffix, zip_dir)
             dir_path = self.zip_album(album, photo_dict, zip_path)
-            dir_zip_dict[dir_path] = zip_path
+            if dir_path is not None:
+                # 要删除这个album文件夹
+                dir_zip_dict[dir_path] = zip_path
+                # 也要删除album下的photo文件夹
+                for d in files_of_dir(dir_path):
+                    dir_zip_dict[d] = None
 
         elif level == 'photo':
             for photo, image_list in photo_dict.items():
                 zip_path = self.get_zip_path(None, photo, filename_rule, suffix, zip_dir)
                 dir_path = self.zip_photo(photo, image_list, zip_path)
-                dir_zip_dict[dir_path] = zip_path
+                if dir_path is not None:
+                    dir_zip_dict[dir_path] = zip_path
 
         else:
             ExceptionTool.raises(f'Not Implemented Zip Level: {level}')
 
         self.after_zip(dir_zip_dict)
 
-    def zip_photo(self, photo, image_list: list, zip_path: str):
+    def zip_photo(self, photo, image_list: list, zip_path: str) -> Optional[str]:
         """
         压缩photo文件夹
         :returns: photo文件夹路径
@@ -261,46 +283,54 @@ class ZipPlugin(JmOptionPlugin):
             if len(image_list) == 0 \
             else os.path.dirname(image_list[0][0])
 
-        all_filepath = set(map(lambda t: t[0], image_list))
+        all_filepath = set(map(lambda t: self.unified_path(t[0]), image_list))
 
-        if len(all_filepath) == 0:
-            self.debug('无下载文件，无需压缩', 'skip')
-            return
+        return self.do_zip(photo_dir,
+                           zip_path,
+                           all_filepath,
+                           f'压缩章节[{photo.photo_id}]成功 → {zip_path}',
+                           )
 
-        from common import backup_dir_to_zip
-        backup_dir_to_zip(photo_dir, zip_path, acceptor=lambda f: f in all_filepath)
-        self.debug(f'压缩章节[{photo.photo_id}]成功 → {zip_path}', 'finish')
+    @staticmethod
+    def unified_path(f):
+        return fix_filepath(f, os.path.isdir(f))
 
-        return photo_dir
-
-    def zip_album(self, album, photo_dict: dict, zip_path):
+    def zip_album(self, album, photo_dict: dict, zip_path) -> Optional[str]:
         """
         压缩album文件夹
         :returns: album文件夹路径
         """
-        album_dir = self.option.decide_album_dir(album)
         all_filepath: Set[str] = set()
 
-        for image_list in photo_dict.values():
-            image_list: List[Tuple[str, JmImageDetail]]
-            for path, _ in image_list:
-                all_filepath.add(path)
+        def addpath(f):
+            all_filepath.update(set(f))
 
+        album_dir = self.option.decide_album_dir(album)
+        # addpath(self.option.decide_image_save_dir(photo) for photo in photo_dict.keys())
+        addpath(path for ls in photo_dict.values() for path, _ in ls)
+
+        return self.do_zip(album_dir,
+                           zip_path,
+                           all_filepath,
+                           msg=f'压缩本子[{album.album_id}]成功 → {zip_path}',
+                           )
+
+    def do_zip(self, source_dir, zip_path, all_filepath, msg):
         if len(all_filepath) == 0:
             self.debug('无下载文件，无需压缩', 'skip')
-            return
+            return None
 
         from common import backup_dir_to_zip
         backup_dir_to_zip(
-            album_dir,
+            source_dir,
             zip_path,
-            acceptor=lambda f: f in all_filepath
-        )
+            acceptor=lambda f: os.path.isdir(f) or self.unified_path(f) in all_filepath
+        ).close()
 
-        self.debug(f'压缩本子[{album.album_id}]成功 → {zip_path}', 'finish')
-        return album_dir
+        self.debug(msg, 'finish')
+        return self.unified_path(source_dir)
 
-    def after_zip(self, dir_zip_dict: Dict[str, str]):
+    def after_zip(self, dir_zip_dict: Dict[str, Optional[str]]):
         # 是否要删除所有原文件
         if self.delete_original_file is True:
             self.delete_all_files_and_empty_dir(
@@ -326,15 +356,20 @@ class ZipPlugin(JmOptionPlugin):
         删除所有文件和文件夹
         """
         import os
-        for album, photo_dict in all_downloaded.items():
-            for photo, image_list in photo_dict.items():
-                for f, image in image_list:
+        for photo_dict in all_downloaded.values():
+            for image_list in photo_dict.values():
+                for f, _ in image_list:
+                    # check not exist
+                    if file_not_exists(f):
+                        continue
+
                     os.remove(f)
                     self.debug(f'删除原文件: {f}', 'remove')
 
-        for d in dir_list:
-            if len(os.listdir(d)) == 0:
-                os.removedirs(d)
+        for d in sorted(dir_list, reverse=True):
+            # check exist
+            if file_exists(d):
+                os.rmdir(d)
                 self.debug(f'删除文件夹: {d}', 'remove')
 
 
@@ -403,11 +438,29 @@ class SendQQEmailPlugin(JmOptionPlugin):
                album=None,
                downloader=None,
                ) -> None:
-        if not (msg_from and msg_to and password):
-            self.debug('发送邮件的相关参数为空，不处理')
-            return
+        self.require_true(msg_from and msg_to and password, '发件人、收件人、授权码都不能为空')
+
         from common import EmailConfig
         econfig = EmailConfig(msg_from, msg_to, password)
         epostman = econfig.create_email_postman()
         epostman.send(content, title)
+
         self.debug('Email sent successfully')
+
+
+class DebugTopicFilterPlugin(JmOptionPlugin):
+    plugin_key = 'debug_topic_filter'
+
+    def invoke(self, whitelist) -> None:
+        if whitelist is not None:
+            whitelist = set(whitelist)
+
+        old_jm_debug = JmModuleConfig.debug_executor
+
+        def new_jm_debug(topic, msg):
+            if whitelist is not None and topic not in whitelist:
+                return
+
+            old_jm_debug(topic, msg)
+
+        JmModuleConfig.debug_executor = new_jm_debug
