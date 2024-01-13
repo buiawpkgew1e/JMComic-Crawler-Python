@@ -51,7 +51,7 @@ class JmcomicText:
     # 點擊喜歡
     pattern_html_album_likes = compile(r'<span id="albim_likes_\d+">(.*?)</span>')
     # 觀看
-    pattern_html_album_views = compile(r'<span>(.*?)</span> (次觀看|观看次数)')
+    pattern_html_album_views = compile(r'<span>(.*?)</span>\n<span>(次觀看|观看次数)</span>')
     # 評論(div)
     pattern_html_album_comment_count = compile(r'<div class="badge"[^>]*?id="total_video_comments">(\d+)</div>'), 0
 
@@ -266,6 +266,24 @@ class JmcomicText:
             ret.append(w)
             char_list.clear()
 
+        def find_right_pair(left_pair, i):
+            stack = [left_pair]
+            j = i + 1
+
+            while j < length and len(stack) != 0:
+                c = title[j]
+                if c in bracket_map:
+                    stack.append(c)
+                elif c == bracket_map[stack[-1]]:
+                    stack.pop()
+
+                j += 1
+
+            if len(stack) == 0:
+                return j
+            else:
+                return -1
+
         while i < length:
             c = title[i]
 
@@ -273,12 +291,12 @@ class JmcomicText:
                 # 上一个单词结束
                 add()
                 # 定位右括号
-                j = title.find(bracket_map[c], i)
+                j = find_right_pair(c, i)
                 ExceptionTool.require_true(j != -1, f'未闭合的 {c}{bracket_map[c]}: {title[i:]}')
                 # 整个括号的单词结束
-                add(title[i:j + 1])
+                add(title[i:j])
                 # 移动指针
-                i = j + 1
+                i = j
             else:
                 char_list.append(c)
                 i += 1
@@ -353,7 +371,7 @@ class JmPageTool:
     )
 
     # 用来查找tag列表
-    pattern_html_search_tag_list = compile(r'<a[^>]*?>(.*?)</a>')
+    pattern_html_search_tags = compile(r'<a[^>]*?>(.*?)</a>')
 
     # 查找错误，例如 [错误，關鍵字過短，請至少輸入兩個字以上。]
     pattern_html_search_error = compile(r'<fieldset>\n<legend>(.*?)</legend>\n<div class=.*?>\n(.*?)\n</div>\n</fieldset>')
@@ -400,11 +418,11 @@ class JmPageTool:
         album_info_list = cls.pattern_html_search_album_info_list.findall(html)
 
         for (album_id, title, _, label_category, label_sub, tag_text) in album_info_list:
-            tag_list = cls.pattern_html_search_tag_list.findall(tag_text)
+            tags = cls.pattern_html_search_tags.findall(tag_text)
             content.append((
                 album_id, {
                     'name': title,  # 改成name是为了兼容 parse_api_resp_to_page
-                    'tag_list': tag_list
+                    'tags': tags
                 }
             ))
 
@@ -418,11 +436,11 @@ class JmPageTool:
         album_info_list = cls.pattern_html_category_album_info_list.findall(html)
 
         for (album_id, title, tag_text) in album_info_list:
-            tag_list = cls.pattern_html_search_tag_list.findall(tag_text)
+            tags = cls.pattern_html_search_tags.findall(tag_text)
             content.append((
                 album_id, {
                     'name': title,  # 改成name是为了兼容 parse_api_resp_to_page
-                    'tag_list': tag_list
+                    'tags': tags
                 }
             ))
 
@@ -476,7 +494,7 @@ class JmPageTool:
           ]
         }
         """
-        total: int = int(data.total)
+        total: int = int(data.total or 0)  # 2024.1.5 data.total可能为None
         content = cls.adapt_content(data.content)
         return JmSearchPage(content, total)
 
@@ -528,7 +546,7 @@ class JmPageTool:
     def adapt_content(cls, content):
         def adapt_item(item: DictModel):
             item: dict = item.src_dict
-            item.setdefault('tag_list', [])
+            item.setdefault('tags', [])
             return item
 
         content = [
