@@ -38,16 +38,15 @@ def get_id_set(env_name, given):
         aid_set.update(str_to_set(text))
 
     return aid_set
+
 def main():
     # 加载要下载的专辑ID集合
     
     album_id_set = get_id_set('JM_ALBUM_IDS', jm_albums)
-    photo_id_set = get_id_set('JM_PHOTO_IDS', image_ids)
 
     # 创建JmcomicUI实例并设置待下载ID列表
     helper = JmcomicUI()
     helper.album_id_list = list(album_id_set.intersection(set(jm_albums)))
-    helper.photo_id_list = list(photo_id_set.intersection(set(image_ids)))
 
     # 获取选项配置
     option = get_option()
