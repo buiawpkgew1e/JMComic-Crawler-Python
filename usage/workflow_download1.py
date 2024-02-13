@@ -7,7 +7,6 @@ from jmcomic.cl import ExceptionTool
 # 更具描述性的变量名，假设list1为专辑ID列表，list2为单个图片ID列表
 jm_albums = '''
 302433
-463812
 '''
 
 image_ids = [
