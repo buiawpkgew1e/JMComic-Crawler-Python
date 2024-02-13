@@ -1,8 +1,8 @@
 import os
 import time
 import logging
-from jmcomic import JmcomicUI, create_option, DirRule, JmOption, JmcomicException
-from jmcomic.cl import ExceptionTool
+from jmcomic import *
+from jmcomic.cl import JmcomicUI
 
 # 更具描述性的变量名，假设list1为专辑ID列表，list2为单个图片ID列表
 jm_albums = '''
