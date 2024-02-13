@@ -32,7 +32,7 @@ def main():
 
     # 创建JmcomicUI实例并设置待下载ID列表
     helper = JmcomicUI()
-    helper.album_id_list = list(album_id_set.intersection(set(album_ids)))
+    helper.album_id_list = list(album_id_set.intersection(set(jm_albums)))
     helper.photo_id_list = list(image_id_set.intersection(set(image_ids)))
 
     # 获取选项配置
