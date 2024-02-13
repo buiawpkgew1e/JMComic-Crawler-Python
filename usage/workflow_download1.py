@@ -60,13 +60,13 @@ def main():
         # 可在此处添加更详细的错误处理逻辑，如保存异常响应文本等
 
 def get_option():
-    # 创建并读取option配置文件
-    option = create_option(os.path.join(os.path.dirname(__file__), '../../assets/option/option_workflow_download.yml'))
+    # 读取 option 配置文件
+    option = create_option(os.path.abspath(os.path.join(__file__, '../../assets/option/option_workflow_download.yml')))
 
-    # 覆盖配置文件中的配置项
+    # 支持工作流覆盖配置文件的配置
     cover_option_config(option)
 
-    # 添加请求错误时的日志记录功能
+    # 把请求错误的html下载到文件，方便GitHub Actions下载查看日志
     log_before_raise()
 
     return option
