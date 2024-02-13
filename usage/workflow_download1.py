@@ -5,9 +5,8 @@ from jmcomic import *
 from jmcomic.cl import JmcomicUI
 
 # 更具描述性的变量名，假设list1为专辑ID列表，list2为单个图片ID列表
-jm_albums = '''
-302433
-'''
+jm_albums = [302433]
+
 
 image_ids = [
     # ... (原来的list2内容)
