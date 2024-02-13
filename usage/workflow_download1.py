@@ -15,25 +15,37 @@ image_ids = [
 # 日志配置
 logging.basicConfig(filename='download.log', level=logging.INFO, format='%(asctime)s %(levelname)s: %(message)s')
 
-def load_ids_from_env(env_name, default_value):
-    """
-    从环境变量加载ID集合，并去除空白字符和指定的首尾字符
-    """
-    env_value = os.getenv(env_name, default_value).strip()
-    trimmed_value = env_value.strip('[]').strip('"\'')
-    return set(trimmed_value.split('\n'))
+def env(name, default, trim=('[]', '""', "''")):
+    import os
+    value = os.getenv(name, None)
+    if value is None or value == '':
+        return default
 
+    for pair in trim:
+        if value.startswith(pair[0]) and value.endswith(pair[1]):
+            value = value[1:-1]
+
+    return value
+
+def get_id_set(env_name, given):
+    aid_set = set()
+    for text in [
+        given,
+        (env(env_name, '')).replace('-', '\n'),
+    ]:
+        aid_set.update(str_to_set(text))
+
+    return aid_set
 def main():
     # 加载要下载的专辑ID集合
-    album_id_set = load_ids_from_env('JM_ALBUM_IDS', jm_albums)
     
-    # 加载要下载的图片ID集合
-    image_id_set = load_ids_from_env('JM_PHOTO_IDS', '\n'.join(str(id) for id in image_ids))
+    album_id_set = get_id_set('JM_ALBUM_IDS', jm_albums)
+    photo_id_set = get_id_set('JM_PHOTO_IDS', image_ids)
 
     # 创建JmcomicUI实例并设置待下载ID列表
     helper = JmcomicUI()
     helper.album_id_list = list(album_id_set.intersection(set(jm_albums)))
-    helper.photo_id_list = list(image_id_set.intersection(set(image_ids)))
+    helper.photo_id_list = list(photo_id_set.intersection(set(image_ids)))
 
     # 获取选项配置
     option = get_option()
