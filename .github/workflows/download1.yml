@@ -53,7 +53,7 @@ jobs:
       - name: 运行下载脚本
         run: |
           cd ./usage/
-          python workflow_download.py
+          python workflow_download1.py
 
       - name: 压缩文件
         run: |
