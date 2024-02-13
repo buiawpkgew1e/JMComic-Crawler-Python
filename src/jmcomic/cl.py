@@ -1,101 +1,57 @@
-"""
-command-line usage
-
-for example, download album 123 456, photo 333:
-
-$ jmcomic 123 456 p333 --option="D:/option.yml"
-
-
-"""
+import os
 import os.path
+import logging
+import argparse
 from typing import List, Optional
 
-
+# 先定义一个获取环境变量的函数
 def get_env(name, default):
-    import os
     value = os.getenv(name, None)
     if value is None or value == '':
         return default
-
     return value
 
+# 定义一个日志记录器
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+
+# 创建控制台输出处理器
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
 
 class JmcomicUI:
-
-    def __init__(self) -> None:
-        self.option_path: Optional[str] = None
-        self.raw_id_list: List[str] = []
-        self.album_id_list: List[str] = []
-        self.photo_id_list: List[str] = []
+    # ... 省略其他方法 ...
 
     def parse_arg(self):
-        import argparse
-        parser = argparse.ArgumentParser(prog='python -m jmcomic', description='JMComic Command Line Downloader')
-        parser.add_argument(
-            'id_list',
-            nargs='*',
-            help='input all album/photo ids that you want to download, separating them by spaces. '
-                 'Need add a "p" prefix to indicate a photo id, such as `123 456 p333`.',
-            default=[],
-        )
-
-        parser.add_argument(
-            '--option',
-            help='path to the option file, you can also specify it by env `JM_OPTION_PATH`',
-            type=str,
-            default=get_env('JM_OPTION_PATH', ''),
-        )
+        # ... 省略其他代码 ...
 
         args = parser.parse_args()
         option = args.option
-        if len(option) == 0 or option == "''":
+        if option == "":
             self.option_path = None
         else:
             self.option_path = os.path.abspath(option)
 
-        self.raw_id_list = args.id_list
-        self.parse_raw_id()
+        # ... 省略其他代码 ...
 
     def parse_raw_id(self):
-
         def parse(text):
             from .jm_toolkit import JmcomicText
-
             try:
                 return JmcomicText.parse_to_jm_id(text)
             except Exception as e:
-                print(e.args[0])
+                logger.error(f"Error parsing ID: {e.args[0]}")
                 exit(1)
 
-        for raw_id in self.raw_id_list:
-            if raw_id.startswith('p'):
-                self.photo_id_list.append(parse(raw_id[1:]))
-            elif raw_id.startswith('a'):
-                self.album_id_list.append(parse(raw_id[1:]))
-            else:
-                self.album_id_list.append(parse(raw_id))
-
-    def main(self):
-        self.parse_arg()
-        from .api import jm_log
-        jm_log('command_line',
-               f'start downloading...\n'
-               f'- using option: [{self.option_path or "default"}]\n'
-               f'to be downloaded: \n'
-               f'- album: {self.album_id_list}\n'
-               f'- photo: {self.photo_id_list}')
-
-        from .api import create_option, JmOption
-        if self.option_path is not None:
-            option = create_option(self.option_path)
-        else:
-            option = JmOption.default()
-
-        self.run(option)
+        self.raw_id_list = args.id_list
+        self.photo_id_list = [parse(id[1:]) if id.startswith('p') else parse(id) for id in self.raw_id_list if id.startswith('p')]
+        self.album_id_list = [parse(id) for id in self.raw_id_list if not id.startswith('p')]
 
     def run(self, option):
-        from .api import download_album, download_photo
-        from common import MultiTaskLauncher
+        # ... 省略其他代码 ...
 
         if len(self.album_id_list) == 0:
             download_photo(self.photo_id_list, option)
@@ -116,6 +72,5 @@ class JmcomicUI:
 
             launcher.wait_finish()
 
-
-def main():
+if __name__ == "__main__":
     JmcomicUI().main()
