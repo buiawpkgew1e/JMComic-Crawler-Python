@@ -35,7 +35,6 @@ jm_albums = '''
 A=['460809']
 # 去除空白字符并转换为列表
 jm_albums_list = [x.strip() for x in jm_albums.splitlines() if x.strip()]
-A_list = [x.strip() for x in A.splitlines() if x.strip()]
 print(f"要下载的本子的ID：{jm_albums_list}")
 print(f"要下载的本子的ID：{A_list}")
 print("##################")
@@ -43,9 +42,6 @@ print("##################")
 result_jm_albums = [x for x in jm_albums_list if x in list2]
 print(f"jm_albums 与 list2 的交集：{result_jm_albums}")
 print("##################")
-# 计算 A 与 jm_albums 的交集
-result_A = [x for x in A_list if x in jm_albums_list]
-print(f"A 与 jm_albums 的交集：{result_A}")
 print("##################")
 # 将结果保存到文件
 with open('matched_ids_jm_albums.txt', 'w') as file:
