@@ -61,19 +61,11 @@ jobs:
           tar -zcvf "../$ZIP_NAME" ./
           mv "../$ZIP_NAME" .
 
-      # - name: 上传结果
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: ${{ env.UPLOAD_NAME }}
-      #     path: ${{ env.JM_DOWNLOAD_DIR }}/${{ env.ZIP_NAME }}
-      #     if-no-files-found: warn
-      #     retention-days: 90
-
       - name: 自动释放
         uses: marvinpinto/action-automatic-releases@v1.2.1
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "1"
+          automatic_release_tag: ${{ github.event.head_commit.timestamp | date_format('%Y-%m-%d') }}
           prerelease: true
           title: "finder-result"
           files: ${{ env.JM_DOWNLOAD_DIR }}/${{ env.ZIP_NAME }}
