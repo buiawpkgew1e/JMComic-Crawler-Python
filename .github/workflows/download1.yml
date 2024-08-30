@@ -68,7 +68,7 @@ jobs:
             git pull origin master
             git add ./usage/list2.txt
             git add ./usage/final_list.txt
-            git commit -m "$(date '+%Y-%m-%d %H:%M:%S')合并节点"
+            git commit -m "去重复和集合排序"
       - name: Push
         uses:  ad-m/github-push-action@master
         with:
