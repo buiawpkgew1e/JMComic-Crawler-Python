@@ -59,6 +59,8 @@ def get_id_set(env_name, given):
         given,
         (env(env_name, '')).replace('-', '\n'),
     ]:
+        if isinstance(text, list):
+            text = '\n'.join(text)
         aid_set.update(str_to_set(text))
 
     return aid_set
