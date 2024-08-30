@@ -61,3 +61,15 @@ jobs:
           prerelease: true
           title: "finder-result"
           files: ${{ env.JM_DOWNLOAD_DIR }}/${{ env.ZIP_NAME }}
+      - name: Commit change
+        run: |
+            git config --local user.email "actions@github.com"
+            git config --local user.name "GitHub Actions"
+            git pull origin master
+            git add ./usage/list2.txt
+            git add ./usage/final_list.txt
+            git commit -m "$(date '+%Y-%m-%d %H:%M:%S')合并节点"
+      - name: Push
+        uses:  ad-m/github-push-action@master
+        with:
+            branch: master
