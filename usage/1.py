@@ -32,31 +32,26 @@ jm_albums = '''
 465549
 463812
 '''
-A=['460809']
-# 去除空白字符并转换为列表
-jm_albums_list = [x.strip() for x in jm_albums.splitlines() if x.strip()]
-print(f"要下载的本子的ID：{jm_albums_list}")
-print("##################")
-# 计算 jm_albums 与 list2 的交集
-result_jm_albums = [x for x in jm_albums_list if x in list2]
-print(f"jm_albums 与 list2 的交集：{result_jm_albums}")
-print("##################")
-print("##################")
-# 将结果保存到文件
-with open('matched_ids_jm_albums.txt', 'w') as file:
-    for item in result_jm_albums:
-        file.write(f"{item}\n")
-
-print(f"匹配的ID已保存到 matched_ids_jm_albums.txt 和 matched_ids_A.txt 文件中。")
-
-print("###########################")
 # 去除空白字符并转换为列表
 jm_albums_list = [x.strip() for x in jm_albums.splitlines() if x.strip()]
 
+print(f"共 {jm_albums_list} 个本子需要下载。")
+print("##################")
 # 找到不在 list2 中的ID
 A = [x for x in jm_albums_list if x not in list2]
+print(f"以下ID在 list2 中不存在：\n{A}")
+print(f"共 {len(A)} 个ID不在 list2 中。")    
+print("##################")
+# 将 list2 转换为字符串格式
+B = '\n'.join(list2)
+print(f"list2 转换为字符串格式：\n{B}")
+print("##################")
+# 将 A 添加到 B 的结尾
+B_with_A = B + '\n' + '\n'.join(A)
+print(f"将 A 添加到 B 的结尾：\n{B_with_A}")
+print("##################")
+# 将结果保存到文件
+with open('output.txt', 'w') as file:
+    file.write(B_with_A)
 
-# 将结果转换为字符串格式
-A_str = '\n'.join(A)
-
-print(A_str)
+print(f"结果已保存到 output.txt 文件中。")
