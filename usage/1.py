@@ -16,12 +16,8 @@ jm_albums = '''
 '''
 # 去除空白字符并转换为集合去重，然后转换回列表
 jm_albums_set = {x.strip() for x in jm_albums.splitlines() if x.strip()}
-print(f"共jm_albums_set: {jm_albums_set}")
-print("##################")
 # 找到不在 list2 中的唯一ID
 unique_ids = [x for x in jm_albums_set if x not in list2]
-print(f"以下ID在 list2 中不存在：\n{unique_ids}")
-print("##################")
 # 将去重后的结果保存到文件
 with open('list2.txt', 'w') as file:
     for item in unique_ids:
