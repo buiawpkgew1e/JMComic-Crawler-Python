@@ -40,11 +40,6 @@ jm_albums = '''
 '''
 
 result = [x for x in jm_albums if x in list2]
-# 单独下载章节
-jm_photos = '''
-
-
-'''
 
 def str_to_set(text):
     return set(line.strip() for line in text.split('\n') if line.strip())
@@ -70,7 +65,7 @@ def get_id_set(env_name, given_text):
 
 def create_option(file_path):
     # 读取 option 配置文件
-    option = JmOption(file_path)
+    option = JmOption(file_path, download=JmDownloadOption(), client=JmClientOption(), plugins=[])
 
     # 支持工作流覆盖配置文件的配置
     cover_option_config(option)
