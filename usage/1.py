@@ -38,10 +38,10 @@ jm_albums_list = list(jm_albums_set)
 print(f"共jm_albums_set: {jm_albums_set}")
 print(f"共jm_albums_list: {jm_albums_list}")
 # 将去重后的结果保存到文件
-with open('list2', 'w') as file:
+with open('list2.txt', 'w') as file:
     for item in jm_albums_list:
         file.write(f"{item}\n")
-print(f"结果已保存到 list2 文件中。")
+print(f"结果已保存到 unique_jm_albums.txt 文件中。")
 print("##################")
 # 找到不在 list2 中的ID
 A = [x for x in jm_albums_list if x not in list2]
