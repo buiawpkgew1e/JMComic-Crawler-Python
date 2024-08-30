@@ -57,3 +57,15 @@ with open('matched_ids_A.txt', 'w') as file:
         file.write(f"{item}\n")
 
 print(f"匹配的ID已保存到 matched_ids_jm_albums.txt 和 matched_ids_A.txt 文件中。")
+
+print("###########################")
+# 去除空白字符并转换为列表
+jm_albums_list = [x.strip() for x in jm_albums.splitlines() if x.strip()]
+
+# 找到不在 list2 中的ID
+A = [x for x in jm_albums_list if x not in list2]
+
+# 将结果转换为字符串格式
+A_str = '\n'.join(A)
+
+print(A_str)
