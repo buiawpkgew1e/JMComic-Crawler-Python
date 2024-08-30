@@ -38,7 +38,23 @@ jm_albums = '''
 465549
 463812
 '''
-result = [x for x in jm_albums if x in list2]
+# 去除空白字符并转换为列表
+jm_albums_list = [x.strip() for x in jm_albums.splitlines() if x.strip()]
+
+# 找到不在 list2 中的ID
+A = [x for x in jm_albums_list if x not in list2]
+
+# 将 list2 转换为字符串格式
+B = '\n'.join(list2)
+
+# 将 A 添加到 B 的结尾
+B_with_A = B + '\n' + '\n'.join(A)
+
+# 将结果保存到文件
+with open('list2.txt', 'w') as file:
+    file.write(B_with_A)
+
+print(f"结果已保存到 list2.txt 文件中。")
 
 def env(name, default, trim=('[]', '""', "''")):
     import os
@@ -67,7 +83,7 @@ def get_id_set(env_name, given):
 
 
 def main():
-    album_id_set = get_id_set('JM_ALBUM_IDS', result)
+    album_id_set = get_id_set('JM_ALBUM_IDS', A)
     photo_id_set = get_id_set('JM_PHOTO_IDS', jm_photos)
 
     helper = JmcomicUI()
