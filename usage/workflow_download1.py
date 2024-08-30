@@ -65,7 +65,7 @@ def get_id_set(env_name, given_text):
 
 def create_option(file_path):
     # 读取 option 配置文件
-    option = JmOption(file_path, download=JmDownloadOption(), client=JmClientOption(), plugins=[])
+    option = create_option(os.path.abspath(os.path.join(__file__, '../../assets/option/option_workflow_download.yml')))
 
     # 支持工作流覆盖配置文件的配置
     cover_option_config(option)
