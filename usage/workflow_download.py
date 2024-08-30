@@ -8,7 +8,7 @@ from jmcomic.cl import JmcomicUI
 jm_albums = '''
 302433
 397749
-460809
+536765
 403910
 334761
 427669
