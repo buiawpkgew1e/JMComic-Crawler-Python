@@ -25,7 +25,6 @@ with open('list2.txt', 'w') as file:
 print(f"结果已保存到 list2.txt 文件中。")
 import os
 
-A = ['0']
 # 读取文件 list2.txt 中的数字
 file_path = 'list2.txt'
 try:
@@ -33,8 +32,8 @@ try:
         with open(file_path, 'r') as file:
             for line in file:
                 number = line.strip()
-                if number and number not in A:
-                    A.append(number)
+                if number and number not in list2:
+                    list2.append(number)
     else:
         print(f"文件 {file_path} 不存在。")
 except Exception as e:
@@ -44,7 +43,7 @@ except Exception as e:
 output_file_path = 'final_list.txt'
 try:
     with open(output_file_path, 'w') as file:
-        for item in A:
+        for item in list2:
             file.write(f"{item}\n")
     print(f"结果已保存到 {output_file_path} 文件中。")
 except Exception as e:
