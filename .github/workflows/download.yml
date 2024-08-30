@@ -48,6 +48,18 @@ jobs:
         run: |
           cd ./usage/
           python workflow_download.py
+      - name: Commit change
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git pull origin master
+          git add ./usage/list2.txt
+          git add ./usage/final_list.txt
+          git commit -m "去重复和集合排序"
+      - name: Push
+        uses:  ad-m/github-push-action@master
+        with:
+            branch: master
       - name: 压缩文件
         run: |
           cd $JM_DOWNLOAD_DIR
