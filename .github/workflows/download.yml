@@ -65,7 +65,7 @@ jobs:
         uses: marvinpinto/action-automatic-releases@v1.2.1
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: ${{ github.event.head_commit.timestamp | date_format('%Y-%m-%d') }}
+          automatic_release_tag: "1"
           prerelease: true
           title: "finder-result"
           files: ${{ env.JM_DOWNLOAD_DIR }}/${{ env.ZIP_NAME }}
