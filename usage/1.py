@@ -49,7 +49,7 @@ try:
         print(f"文件 {file_path} 不存在。")
 except Exception as e:
     print(f"读取文件时发生错误: {e}")
-
+list2 = list(dict.fromkeys(list2))
 # 将结果保存到文件
 output_file_path = 'final_list.txt'
 try:
