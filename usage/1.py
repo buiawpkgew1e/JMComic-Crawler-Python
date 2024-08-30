@@ -44,9 +44,9 @@ result = [x for x in jm_albums_list if x in list2]
 print(result)
 print(len(result))
 
-# 将结果保存到文件
-with open('usage/matched_ids.txt', 'w') as file:
-    for item in result:
-        file.write(f"{item}\n")
+# # 将结果保存到文件
+# with open('matched_ids.txt', 'w') as file:
+#     for item in result:
+#         file.write(f"{item}\n")
 
-print(f"匹配的ID已保存到 matched_ids.txt 文件中。")
+# print(f"匹配的ID已保存到 matched_ids.txt 文件中。")
