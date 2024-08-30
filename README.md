@@ -9,7 +9,7 @@
 [【指路】教程：导出并下载你的禁漫收藏夹数据](./assets/docs/sources/tutorial/10_export_favorites.md)
 
 **友情提示：珍爱JM，为了减轻JM的服务器压力，请不要一次性爬取太多本子，西门🙏🙏🙏**.
-
+https://www.jmapiproxyxxx.one
 ## 项目介绍
 
 本项目的核心功能是下载本子。
