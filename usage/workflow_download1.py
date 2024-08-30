@@ -47,6 +47,30 @@ with open('list2.txt', 'w') as file:
     for item in unique_ids:
         file.write(f"{item}\n")
 print(f"结果已保存到 list2.txt 文件中。")
+import os
+
+# 读取文件 list2.txt 中的数字
+file_path = 'list2.txt'
+try:
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as file:
+            for line in file:
+                number = line.strip()
+                if number and number not in list2:
+                    list2.append(number)
+    else:
+        print(f"文件 {file_path} 不存在。")
+except Exception as e:
+    print(f"读取文件时发生错误: {e}")
+
+# 将结果保存到文件
+output_file_path = 'final_list.txt'
+try:
+    with open(output_file_path, 'w') as file:
+        file.write(str(list2))
+    print(f"结果已保存到 {output_file_path} 文件中。")
+except Exception as e:
+    print(f"保存文件时发生错误: {e}")
 
 def env(name, default, trim=('[]', '""', "''")):
     import os
@@ -76,11 +100,9 @@ def get_id_set(env_name, given):
 
 def main():
     album_id_set = get_id_set('JM_ALBUM_IDS', unique_ids)
-    photo_id_set = get_id_set('JM_PHOTO_IDS', jm_photos)
 
     helper = JmcomicUI()
     helper.album_id_list = list(album_id_set)
-    helper.photo_id_list = list(photo_id_set)
 
     option = get_option()
     helper.run(option)
