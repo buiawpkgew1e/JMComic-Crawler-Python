@@ -43,8 +43,7 @@ except Exception as e:
 output_file_path = 'final_list.txt'
 try:
     with open(output_file_path, 'w') as file:
-        for item in list2:
-            file.write(f"{item}\n")
+        file.write(str(list2))
     print(f"结果已保存到 {output_file_path} 文件中。")
 except Exception as e:
     print(f"保存文件时发生错误: {e}")
