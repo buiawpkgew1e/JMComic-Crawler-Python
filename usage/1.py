@@ -32,6 +32,7 @@ jm_albums = '''
 465549
 463812
 '''
+A=['460809']
 # 去除空白字符并转换为列表
 jm_albums_list = [x.strip() for x in jm_albums.splitlines() if x.strip()]
 A_list = [x.strip() for x in A.splitlines() if x.strip()]
