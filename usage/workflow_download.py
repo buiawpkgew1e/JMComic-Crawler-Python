@@ -34,9 +34,6 @@ jm_albums = '''
 465549
 463812
 '''
-# 单独下载章节
-jm_photos = '''
-'''
 # 去除空白字符并转换为集合去重，然后转换回列表
 jm_albums_set = {x.strip() for x in jm_albums.splitlines() if x.strip()}
 # 找到不在 list2 中的唯一ID
