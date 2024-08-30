@@ -71,7 +71,7 @@ try:
     print(f"结果已保存到 {output_file_path} 文件中。")
 except Exception as e:
     print(f"保存文件时发生错误: {e}")
-
+print(f"重后的结果：{unique_ids}")
 def env(name, default, trim=('[]', '""', "''")):
     import os
     value = os.getenv(name, None)
