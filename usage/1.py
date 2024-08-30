@@ -32,21 +32,27 @@ jm_albums = '''
 465549
 463812
 '''
-
 # 去除空白字符并转换为列表
 jm_albums_list = [x.strip() for x in jm_albums.splitlines() if x.strip()]
-print('#############')
-print(jm_albums_list)
-print(len(jm_albums_list))
-print('#############')
-result = [x for x in jm_albums_list if x in list2]
+A_list = [x.strip() for x in A.splitlines() if x.strip()]
+print(f"要下载的本子的ID：{jm_albums_list}")
+print(f"要下载的本子的ID：{A_list}")
+print("##################")
+# 计算 jm_albums 与 list2 的交集
+result_jm_albums = [x for x in jm_albums_list if x in list2]
+print(f"jm_albums 与 list2 的交集：{result_jm_albums}")
+print("##################")
+# 计算 A 与 jm_albums 的交集
+result_A = [x for x in A_list if x in jm_albums_list]
+print(f"A 与 jm_albums 的交集：{result_A}")
+print("##################")
+# 将结果保存到文件
+with open('matched_ids_jm_albums.txt', 'w') as file:
+    for item in result_jm_albums:
+        file.write(f"{item}\n")
 
-print(result)
-print(len(result))
+with open('matched_ids_A.txt', 'w') as file:
+    for item in result_A:
+        file.write(f"{item}\n")
 
-# # 将结果保存到文件
-# with open('matched_ids.txt', 'w') as file:
-#     for item in result:
-#         file.write(f"{item}\n")
-
-# print(f"匹配的ID已保存到 matched_ids.txt 文件中。")
+print(f"匹配的ID已保存到 matched_ids_jm_albums.txt 和 matched_ids_A.txt 文件中。")
