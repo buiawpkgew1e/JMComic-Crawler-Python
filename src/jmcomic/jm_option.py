@@ -72,10 +72,8 @@ class DirRule:
 
     Detail = Union[JmAlbumDetail, JmPhotoDetail, None]
     RuleFunc = Callable[[Detail], str]
-    RuleSolver = Tuple[int, RuleFunc, str]
+    RuleSolver = Tuple[str, RuleFunc, str]
     RuleSolverList = List[RuleSolver]
-
-    rule_solver_cache: Dict[str, RuleSolver] = {}
 
     def __init__(self, rule: str, base_dir=None):
         base_dir = JmcomicText.parse_to_abspath(base_dir)
@@ -100,6 +98,25 @@ class DirRule:
 
         return fix_filepath('/'.join(path_ls), is_dir=True)
 
+    def decide_album_root_dir(self, album: JmAlbumDetail) -> str:
+        path_ls = []
+        for solver in self.solver_list:
+            key, _, rule = solver
+
+            if key != 'Bd' and key != 'A':
+                continue
+
+            try:
+                ret = self.apply_rule_solver(album, None, solver)
+            except BaseException as e:
+                # noinspection PyUnboundLocalVariable
+                jm_log('dir_rule', f'路径规则"{rule}"的解析出错: {e}, album={album}')
+                raise e
+
+            path_ls.append(str(ret))
+
+        return fix_filepath('/'.join(path_ls), is_dir=True)
+
     def get_role_solver_list(self, rule_dsl: str, base_dir: str) -> RuleSolverList:
         """
         解析下载路径dsl，得到一个路径规则解析列表
@@ -111,7 +128,7 @@ class DirRule:
         for rule in rule_list:
             rule = rule.strip()
             if rule == 'Bd':
-                solver_ls.append((0, lambda _: base_dir, 'Bd'))
+                solver_ls.append(('Bd', lambda _: base_dir, 'Bd'))
                 continue
 
             rule_solver = self.get_rule_solver(rule)
@@ -137,24 +154,14 @@ class DirRule:
 
     @classmethod
     def get_rule_solver(cls, rule: str) -> Optional[RuleSolver]:
-        # 查找缓存
-        if rule in cls.rule_solver_cache:
-            return cls.rule_solver_cache[rule]
-
         # 检查dsl
         if not rule.startswith(('A', 'P')):
             return None
 
-        # Axxx or Pyyy
-        key = 1 if rule[0] == 'A' else 2
-
         def solve_func(detail):
             return fix_windir_name(str(DetailEntity.get_dirname(detail, rule[1:])))
 
-        # 保存缓存
-        rule_solver = (key, solve_func, rule)
-        cls.rule_solver_cache[rule] = rule_solver
-        return rule_solver
+        return rule[0], solve_func, rule
 
     @classmethod
     def apply_rule_solver(cls, album, photo, rule_solver: RuleSolver) -> str:
@@ -168,11 +175,11 @@ class DirRule:
         """
 
         def choose_detail(key):
-            if key == 0:
+            if key == 'Bd':
                 return None
-            if key == 1:
+            if key == 'A':
                 return album
-            if key == 2:
+            if key == 'P':
                 return photo
 
         key, func, _ = rule_solver
@@ -263,15 +270,7 @@ class JmOption:
         )
 
         if ensure_exists:
-            try:
-                mkdir_if_not_exists(save_dir)
-            except OSError as e:
-                if e.errno == 36:
-                    # 目录名过长
-                    limit = JmModuleConfig.VAR_FILE_NAME_LENGTH_LIMIT
-                    jm_log('error', f'目录名过长，无法创建目录，强制缩短到{limit}个字符并重试')
-                    save_dir = save_dir[0:limit]
-                    mkdir_if_not_exists(save_dir)
+            save_dir = JmcomicText.try_mkdir(save_dir)
 
         return save_dir
 
@@ -510,13 +509,21 @@ class JmOption:
 
     # 下面的方法提供面向对象的调用风格
 
-    def download_album(self, album_id):
+    def download_album(self,
+                       album_id,
+                       downloader=None,
+                       callback=None,
+                       ):
         from .api import download_album
-        download_album(album_id, self)
+        download_album(album_id, self, downloader, callback)
 
-    def download_photo(self, photo_id):
+    def download_photo(self,
+                       photo_id,
+                       downloader=None,
+                       callback=None
+                       ):
         from .api import download_photo
-        download_photo(photo_id, self)
+        download_photo(photo_id, self, downloader, callback)
 
     # 下面的方法为调用插件提供支持
 

@@ -1,6 +1,7 @@
 """
 该文件存放的是option插件
 """
+import os.path
 
 from .jm_option import *
 
@@ -296,91 +297,63 @@ class ZipPlugin(JmOptionPlugin):
         zip_dir = JmcomicText.parse_to_abspath(zip_dir)
         mkdir_if_not_exists(zip_dir)
 
-        # 原文件夹 -> zip文件
-        dir_zip_dict: Dict[str, Optional[str]] = {}
+        path_to_delete = []
         photo_dict = downloader.download_success_dict[album]
 
         if level == 'album':
             zip_path = self.get_zip_path(album, None, filename_rule, suffix, zip_dir)
-            self.zip_album(album, photo_dict, zip_path, dir_zip_dict)
+            self.zip_album(album, photo_dict, zip_path, path_to_delete)
 
         elif level == 'photo':
             for photo, image_list in photo_dict.items():
                 zip_path = self.get_zip_path(None, photo, filename_rule, suffix, zip_dir)
-                self.zip_photo(photo, image_list, zip_path, dir_zip_dict)
+                self.zip_photo(photo, image_list, zip_path, path_to_delete)
 
         else:
             ExceptionTool.raises(f'Not Implemented Zip Level: {level}')
 
-        self.after_zip(dir_zip_dict)
+        self.after_zip(path_to_delete)
 
-    def zip_photo(self, photo, image_list: list, zip_path: str, dir_zip_dict) -> Optional[str]:
+    def zip_photo(self, photo, image_list: list, zip_path: str, path_to_delete):
         """
         压缩photo文件夹
-        :returns: photo文件夹路径
         """
         photo_dir = self.option.decide_image_save_dir(photo) \
             if len(image_list) == 0 \
             else os.path.dirname(image_list[0][0])
 
-        all_filepath = set(map(lambda t: self.unified_path(t[0]), image_list))
-
-        if len(all_filepath) == 0:
-            self.log('无下载文件，无需压缩', 'skip')
-            return None
-
         from common import backup_dir_to_zip
-        backup_dir_to_zip(
-            photo_dir,
-            zip_path,
-            acceptor=lambda f: os.path.isdir(f) or self.unified_path(f) in all_filepath
-        ).close()
+        backup_dir_to_zip(photo_dir, zip_path)
 
         self.log(f'压缩章节[{photo.photo_id}]成功 → {zip_path}', 'finish')
-        dir_zip_dict[self.unified_path(photo_dir)] = zip_path
+        path_to_delete.append(self.unified_path(photo_dir))
 
     @staticmethod
     def unified_path(f):
         return fix_filepath(f, os.path.isdir(f))
 
-    def zip_album(self, album, photo_dict: dict, zip_path, dir_zip_dict) -> Optional[str]:
+    def zip_album(self, album, photo_dict: dict, zip_path, path_to_delete):
         """
         压缩album文件夹
-        :returns: album文件夹路径
         """
 
-        # 所有下载了的图片文件的路径
-        all_filepath: Set[str] = set(path for ls in photo_dict.values() for path, _ in ls)
-
-        if len(all_filepath) == 0:
-            self.log('无下载文件，无需压缩', 'skip')
-            return
-
-        # 该本子的所有章节的图片所在文件夹
-        photo_dir_list = [self.option.decide_image_save_dir(photo) for photo in photo_dict.keys()]
-
-        # 压缩文件对象
-        from common import backup_dir_to_zip
+        album_dir = self.option.dir_rule.decide_album_root_dir(album)
         import zipfile
-        zfile = zipfile.ZipFile(zip_path, 'w')
-
-        for photo_dir in photo_dir_list:
-            photo_dir = self.unified_path(photo_dir)
-            backup_dir_to_zip(
-                photo_dir,
-                zip_path,
-                zfile=zfile,
-                prefix=os.path.basename(photo_dir.rstrip('/')),
-                acceptor=lambda f: os.path.isdir(f) or self.unified_path(f) in all_filepath
-            )
-            dir_zip_dict[photo_dir] = zip_path
-
-        zfile.close()
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as f:
+            for photo in photo_dict.keys():
+                # 定位到章节所在文件夹
+                photo_dir = self.unified_path(self.option.decide_image_save_dir(photo))
+                # 章节文件夹标记为删除
+                path_to_delete.append(photo_dir)
+                for file in files_of_dir(photo_dir):
+                    abspath = os.path.join(photo_dir, file)
+                    relpath = os.path.relpath(abspath, album_dir)
+                    f.write(abspath, relpath)
         self.log(f'压缩本子[{album.album_id}]成功 → {zip_path}', 'finish')
 
-    def after_zip(self, dir_zip_dict: Dict[str, Optional[str]]):
+    def after_zip(self, path_to_delete: List[str]):
         # 删除所有原文件
-        dirs = sorted(dir_zip_dict.keys(), reverse=True)
+        dirs = sorted(path_to_delete, reverse=True)
         image_paths = [
             path
             for photo_dict in self.downloader.download_success_dict.values()
@@ -628,7 +601,7 @@ class FavoriteFolderExportPlugin(JmOptionPlugin):
         for page in page_data:
             for aid, extra in page.content:
                 data.append(
-                    (aid, extra.get('author', '') or JmMagicConstants.DEFAULT_AUTHOR, extra['name'])
+                    (aid, extra.get('author', '') or JmModuleConfig.DEFAULT_AUTHOR, extra['name'])
                 )
 
         if len(data) == 0:
@@ -650,7 +623,7 @@ class FavoriteFolderExportPlugin(JmOptionPlugin):
         """
         import zipfile
 
-        with zipfile.ZipFile(zip_path, 'w') as zipf:
+        with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
             # 获取文件夹中的文件列表并将其添加到 ZIP 文件中
             for file in files:
                 zipf.write(file, arcname=of_file_name(file))
@@ -761,13 +734,17 @@ class Img2pdfPlugin(JmOptionPlugin):
     plugin_key = 'img2pdf'
 
     def invoke(self,
-               photo: JmPhotoDetail,
+               photo: JmPhotoDetail = None,
+               album: JmAlbumDetail = None,
                downloader=None,
                pdf_dir=None,
                filename_rule='Pid',
                delete_original_file=False,
                **kwargs,
                ):
+        if photo is None and album is None:
+            jm_log('wrong_usage', 'img2pdf必须运行在after_photo或after_album时')
+
         try:
             import img2pdf
         except ImportError:
@@ -776,28 +753,50 @@ class Img2pdfPlugin(JmOptionPlugin):
 
         self.delete_original_file = delete_original_file
 
-        # 处理文件夹配置
-        filename = DirRule.apply_rule_directly(None, photo, filename_rule)
-        photo_dir = self.option.decide_image_save_dir(photo)
-
         # 处理生成的pdf文件的路径
-        if pdf_dir is None:
-            pdf_dir = photo_dir
-        else:
-            pdf_dir = fix_filepath(pdf_dir, True)
-            mkdir_if_not_exists(pdf_dir)
+        pdf_dir = self.ensure_make_pdf_dir(pdf_dir)
 
+        # 处理pdf文件名
+        filename = DirRule.apply_rule_directly(album, photo, filename_rule)
+
+        # pdf路径
         pdf_filepath = os.path.join(pdf_dir, f'{filename}.pdf')
 
         # 调用 img2pdf 把 photo_dir 下的所有图片转为pdf
-        all_img = files_of_dir(photo_dir)
-        with open(pdf_filepath, 'wb') as f:
-            f.write(img2pdf.convert(all_img))
+        img_path_ls, img_dir_ls = self.write_img_2_pdf(pdf_filepath, album, photo)
+        self.log(f'Convert Successfully: JM{album or photo} → {pdf_filepath}')
 
         # 执行删除
-        self.log(f'Convert Successfully: JM{photo.id} → {pdf_filepath}')
-        all_img.append(self.option.decide_image_save_dir(photo, ensure_exists=False))
-        self.execute_deletion(all_img)
+        img_path_ls += img_dir_ls
+        self.execute_deletion(img_path_ls)
+
+    def write_img_2_pdf(self, pdf_filepath, album: JmAlbumDetail, photo: JmPhotoDetail):
+        import img2pdf
+
+        if album is None:
+            img_dir_ls = [self.option.decide_image_save_dir(photo)]
+        else:
+            img_dir_ls = [self.option.decide_image_save_dir(photo) for photo in album]
+
+        img_path_ls = []
+
+        for img_dir in img_dir_ls:
+            imgs = files_of_dir(img_dir)
+            if not imgs:
+                continue
+            img_path_ls += imgs
+
+        with open(pdf_filepath, 'wb') as f:
+            f.write(img2pdf.convert(img_path_ls))
+
+        return img_path_ls, img_dir_ls
+
+    @staticmethod
+    def ensure_make_pdf_dir(pdf_dir: str):
+        pdf_dir = pdf_dir or os.getcwd()
+        pdf_dir = fix_filepath(pdf_dir, True)
+        mkdir_if_not_exists(pdf_dir)
+        return pdf_dir
 
 
 class JmServerPlugin(JmOptionPlugin):
@@ -1035,3 +1034,86 @@ class SkipPhotoWithFewImagesPlugin(JmOptionPlugin):
     @field_cache()  # 单例
     def build(cls, option: JmOption) -> 'JmOptionPlugin':
         return super().build(option)
+
+
+class DeleteDuplicatedFilesPlugin(JmOptionPlugin):
+    """
+    https://github.com/hect0x7/JMComic-Crawler-Python/issues/244
+    """
+    plugin_key = 'delete_duplicated_files'
+
+    @classmethod
+    def calculate_md5(cls, file_path):
+        import hashlib
+
+        """计算文件的MD5哈希值"""
+        hash_md5 = hashlib.md5()
+        with open(file_path, "rb") as f:
+            for chunk in iter(lambda: f.read(4096), b""):
+                hash_md5.update(chunk)
+        return hash_md5.hexdigest()
+
+    @classmethod
+    def find_duplicate_files(cls, root_folder):
+        """递归读取文件夹下所有文件并计算MD5出现次数"""
+        import os
+        from collections import defaultdict
+        md5_dict = defaultdict(list)
+
+        for root, _, files in os.walk(root_folder):
+            for file in files:
+                file_path = os.path.join(root, file)
+                file_md5 = cls.calculate_md5(file_path)
+                md5_dict[file_md5].append(file_path)
+
+        return md5_dict
+
+    def invoke(self,
+               limit,
+               album=None,
+               downloader=None,
+               delete_original_file=True,
+               **kwargs,
+               ) -> None:
+        if album is None:
+            return
+
+        self.delete_original_file = delete_original_file
+        # 获取到下载本子所在根目录
+        root_folder = self.option.dir_rule.decide_album_root_dir(album)
+        self.find_duplicated_files_and_delete(limit, root_folder, album)
+
+    def find_duplicated_files_and_delete(self, limit: int, root_folder: str, album: Optional[JmAlbumDetail] = None):
+        md5_dict = self.find_duplicate_files(root_folder)
+        # 打印MD5出现次数大于等于limit的文件
+        for md5, paths in md5_dict.items():
+            if len(paths) >= limit:
+                prefix = '' if album is None else f'({album.album_id}) '
+                message = [prefix + f'MD5: {md5} 出现次数: {len(paths)}'] + \
+                          [f'  {path}' for path in paths]
+                self.log('\n'.join(message))
+                self.execute_deletion(paths)
+
+
+class ReplacePathStringPlugin(JmOptionPlugin):
+    plugin_key = 'replace_path_string'
+
+    def invoke(self,
+               replace: Dict[str, str],
+               ):
+        if not replace:
+            return
+
+        old_decide_dir = self.option.decide_image_save_dir
+
+        def new_decide_dir(photo, ensure_exists=True) -> str:
+            original_path: str = old_decide_dir(photo, False)
+            for k, v in replace.items():
+                original_path = original_path.replace(k, v)
+
+            if ensure_exists:
+                JmcomicText.try_mkdir(original_path)
+
+            return original_path
+
+        self.option.decide_image_save_dir = new_decide_dir

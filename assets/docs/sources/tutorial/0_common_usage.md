@@ -1,4 +1,4 @@
-# jmcomic 常用类和方法演示
+# 常用类和方法
 
 ## 下载本子/章节
 
@@ -53,11 +53,12 @@ album: JmAlbumDetail = client.get_album_detail('427413')
 def fetch(photo: JmPhotoDetail):
     # 章节实体类
     photo = client.get_photo_detail(photo.photo_id, False)
-
+    print(f'章节id: {photo.photo_id}')
+    
     # 图片实体类
     image: JmImageDetail
     for image in photo:
-        print(image.img_url)
+        print(f'图片url: {image.img_url}')
 
 
 # 多线程发起请求
@@ -66,6 +67,36 @@ multi_thread_launcher(
     apply_each_obj_func=fetch
 )
 ```
+
+## jmcomic异常处理示例
+
+```python
+from jmcomic import *
+
+# 客户端
+client = JmOption.default().new_jm_client()
+
+# 捕获jmcomic可能出现的异常
+try:
+    # 请求本子实体类
+    album: JmAlbumDetail = client.get_album_detail('427413')
+except MissingAlbumPhotoException as e:
+    print(f'id={e.error_jmid}的本子不存在')
+    
+except JsonResolveFailException as e:
+    print(f'解析json失败')
+    # 响应对象
+    resp = e.resp
+    print(f'resp.text: {resp.text}, resp.status_code: {resp.status_code}')
+    
+except RequestRetryAllFailException as e:
+    print(f'请求失败，重试次数耗尽')
+    
+except JmcomicException as e:
+    # 捕获所有异常，用作兜底
+    print(f'jmcomic遇到异常: {e}')
+```
+
 
 ## 搜索本子
 
@@ -144,16 +175,61 @@ page: JmCategoryPage = cl.month_ranking(1)
 page: JmCategoryPage = cl.week_ranking(1)
 
 # 循环获取分页，使用 cl.categories_filter_gen
-for page in cl.categories_filter_gen(1, # 起始页码
+for page in cl.categories_filter_gen(page=1, # 起始页码
                                      # 下面是分类参数
-                                     JmMagicConstants.TIME_WEEK,
-                                     JmMagicConstants.CATEGORY_ALL,
-                                     JmMagicConstants.ORDER_BY_VIEW,
+                                     time=JmMagicConstants.TIME_WEEK,
+                                     category=JmMagicConstants.CATEGORY_ALL,
+                                     order_by=JmMagicConstants.ORDER_BY_VIEW,
                                      ):
     for aid, atitle in page:
         print(aid, atitle)
 
 ```
+
+## 高级搜索（分类/副分类）
+
+禁漫网页端的搜索除了常规条件，还支持【分类】和【副分类】的搜索。
+
+在任一搜索页面，你会看到本子图的右上方有两个标签。左边的是【分类】，右边的是【副分类】。
+
+下面演示代码如何编写。
+
+* **注意！！禁漫移动端没有提供如下功能，以下代码仅对网页端生效。**
+
+```python
+# 在编写代码前，建议先熟悉禁漫网页的搜本功能，下面的代码都是对照网页编写的。
+# 网页搜索示例：https://18comic.vip/search/photos/doujin/sub/CG?main_tag=0&search_query=mana&page=1&o=mr&t=a
+
+from jmcomic import *
+
+op = create_option_by_file('op.yml')
+# 创建网页端client
+html_cl = op.new_jm_client(impl='html')
+
+# 使用站内搜索，指定【分类】和【副分类】
+# 分类 = JmMagicConstants.CATEGORY_DOUJIN = 同人本
+# 副分类 = JmMagicConstants.SUB_DOUJIN_CG = CG本
+# 实际URL：https://18comic.vip/search/photos/doujin/sub/CG?main_tag=0&search_query=mana&page=1&o=mr&t=a
+page = html_cl.search_site(search_query='mana',
+                           category=JmMagicConstants.CATEGORY_DOUJIN,
+                           sub_category=JmMagicConstants.SUB_DOUJIN_CG,
+                           page=1,
+                           )
+# 打印page内容
+for aid, atitle in page.iter_id_title():
+    print(aid, atitle)
+
+# 循环获取分页
+for page in html_cl.search_gen(search_query='mana',
+                               category=JmMagicConstants.CATEGORY_DOUJIN,
+                               sub_category=JmMagicConstants.SUB_DOUJIN_CG,
+                               page=1,  # 起始页码
+                               ):
+    # 打印page内容
+    for aid, atitle in page.iter_id_title():
+        print(aid, atitle)
+```
+
 
 ## 手动创建Client
 
@@ -184,6 +260,4 @@ cl = JmApiClient(
     domain_list=JmModuleConfig.DOMAIN_API_LIST,
     retry_times=1
 )
-
-
 ```

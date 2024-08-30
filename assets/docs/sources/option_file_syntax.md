@@ -2,11 +2,9 @@
 
 ## 1. 配置前需知
 
-* option有`默认值`，当你使用配置文件来创建option时，你配置文件中的值会覆盖`默认值`。
+* option有`默认值`，你配置文件中的配置项会覆盖`默认值`。因此你只需要添加感兴趣的配置项即可。
 
-  因此，在配置option时，不需要配置全部的值，只需要配置特定部分即可。
-
-* 你可以使用下面的代码来得到option的默认值，你可以删除其中的大部分配置项，只保留你要覆盖的配置项
+* 你也可以使用下面的代码来得到option的默认值。你可以删除其中的大部分配置项，只保留你要覆盖的配置项。
 
 ```python
 from jmcomic import JmOption
@@ -15,7 +13,7 @@ JmOption.default().to_file('./option.yml') # 创建默认option，导出为optio
 
 ## 2. option常规配置项
 
-```yml
+```yaml
 # 开启jmcomic的日志输出，默认为true
 # 对日志有需求的可进一步参考文档 → https://jmcomic.readthedocs.io/en/latest/tutorial/11_log_custom/
 log: true
@@ -110,7 +108,7 @@ dir_rule:
 
 * **插件配置中的kwargs参数支持引用环境变量，语法为 ${环境变量名}**
 
-```yml
+```yaml
 # 插件的配置示例
 plugins:
   after_init:
@@ -132,7 +130,13 @@ plugins:
       kwargs:
         allowed_orig_suffix: # 后缀列表，表示只想下载以.gif结尾的图片
           - .gif
-
+    - plugin: replace_path_string # 字符串替换插件，直接对下载文件夹的路径进行文本替换
+      kwargs:
+        replace: 
+          # {左边写你要替换的原文}: {右边写替换成什么文本}
+          aaa: bbb
+          kyockcho: きょくちょ
+          
     - plugin: client_proxy # 客户端实现类代理插件，不建议非开发人员使用
       kwargs:
         proxy_client_key: photo_concurrent_fetcher_proxy # 代理类的client_key
@@ -191,6 +195,17 @@ plugins:
 
         zip_dir: D:/jmcomic/zip/ # 压缩文件存放的文件夹
         delete_original_file: true # 压缩成功后，删除所有原文件和文件夹
+    
+    # 删除重复文件插件
+    # 参考 → [https://github.com/hect0x7/JMComic-Crawler-Python/issues/244]
+    - plugin: delete_duplicated_files
+      kwargs:
+        # limit: 必填，表示对md5出现次数的限制
+        limit: 3
+        # 如果文件的md5的出现次数 >= limit，是否要删除
+        # 如果delete_original_file不配置，此插件只会打印信息，不会执行其他操作
+        # 如果limit=1, delete_original_file=true 效果会是删除所有文件 
+        delete_original_file: true
 
     - plugin: send_qq_email # 发送qq邮件插件
       kwargs:
@@ -219,7 +234,15 @@ plugins:
     - plugin: img2pdf
       kwargs:
         pdf_dir: D:/pdf/ # pdf存放文件夹
-        filename_rule: Pid # pdf命名规则
+        filename_rule: Pid # pdf命名规则，P代表photo, id代表使用photo.id也就是章节id
+  
+    # img2pdf也支持合并整个本子，把上方的after_photo改为after_album即可。
+    # https://github.com/hect0x7/JMComic-Crawler-Python/discussions/258
+    # 配置到after_album时，需要修改filename_rule参数，不能写Pxx只能写Axx示例如下
+    - plugin: img2pdf
+      kwargs:
+        pdf_dir: D:/pdf/ # pdf存放文件夹
+        filename_rule: Aname # pdf命名规则，A代表album, name代表使用album.name也就是本子名称
   
     # 请注意⚠
     # 下方的j2p插件的功能不如img2pdf插件，不建议使用。
