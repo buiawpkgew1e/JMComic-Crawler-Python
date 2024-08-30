@@ -23,23 +23,4 @@ print("##################")
 with open('list2.txt', 'w') as file:
     for item in unique_ids:
         file.write(f"{item}\n")
-print(f"结果已保存到 unique_jm_albums.txt 文件中。")
-print("##################")
-# 找到不在 list2 中的ID
-A = [x for x in jm_albums_list if x not in list2]
-print(f"以下ID在 list2 中不存在：\n{A}")
-print(f"共 {len(A)} 个ID不在 list2 中。")    
-print("##################")
-# 将 list2 转换为字符串格式
-B = '\n'.join(list2)
-print(f"list2 转换为字符串格式：\n{B}")
-print("##################")
-# 将 A 添加到 B 的结尾
-B_with_A = B + '\n' + '\n'.join(A)
-print(f"将 A 添加到 B 的结尾：\n{B_with_A}")
-print("##################")
-# 将结果保存到文件
-with open('output.txt', 'w') as file:
-    file.write(B_with_A)
-
-print(f"结果已保存到 output.txt 文件中。")
+print(f"结果已保存到 list2.txt 文件中。")
