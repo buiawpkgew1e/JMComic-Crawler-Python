@@ -178,27 +178,51 @@ def cover_option_config(option: JmOption):
 
 def log_before_raise():
     jm_download_dir = env('JM_DOWNLOAD_DIR', workspace())
-    mkdir_if_not_exists(jm_download_dir)
+    if not os.path.exists(jm_download_dir):
+        os.makedirs(jm_download_dir)
 
     def decide_filepath(e):
         resp = e.context.get(ExceptionTool.CONTEXT_KEY_RESP, None)
 
         if resp is None:
-            suffix = str(time_stamp())
+            suffix = str(time.time())
         else:
             suffix = resp.url
 
-        name = '-'.join(
-            fix_windir_name(it)
-            for it in [
-                e.description,
-                current_thread().name,
-                suffix
-            ]
-        )
+        parts = [
+            e.description,
+            current_thread().name,
+            suffix
+        ]
+        fixed_parts = [fix_windir_name(it) if it is not None else '' for it in parts]
+        name = '-'.join(fixed_parts)
 
         path = f'{jm_download_dir}/【出错了】{name}.log'
         return path
+
+# def log_before_raise():
+#     jm_download_dir = env('JM_DOWNLOAD_DIR', workspace())
+#     mkdir_if_not_exists(jm_download_dir)
+
+#     def decide_filepath(e):
+#         resp = e.context.get(ExceptionTool.CONTEXT_KEY_RESP, None)
+
+#         if resp is None:
+#             suffix = str(time_stamp())
+#         else:
+#             suffix = resp.url
+
+#         name = '-'.join(
+#             fix_windir_name(it)
+#             for it in [
+#                 e.description,
+#                 current_thread().name,
+#                 suffix
+#             ]
+#         )
+
+#         path = f'{jm_download_dir}/【出错了】{name}.log'
+#         return path
 
     def exception_listener(e: JmcomicException):
         """
