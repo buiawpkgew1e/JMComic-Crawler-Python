@@ -1,6 +1,14 @@
 <!-- 顶部标题 & 统计徽章 -->
 <div align="center">
   <h1 style="margin-top: 0" align="center">Python API for JMComic</h1>
+
+  <p align="center">
+    <strong>简体中文</strong> •
+    <a href="./assets/readme/README-en.md">English</a> •
+    <a href="./assets/readme/README-jp.md">日本語</a> •
+    <a href="./assets/readme/README-kr.md">한국어</a>
+  </p>
+
   <p align="center">
   <strong>提供 Python API 访问禁漫天堂（网页端 & 移动端），集成 GitHub Actions 下载器🚀</strong>
   </p>
@@ -15,17 +23,20 @@
 </div>
 
 
-
-
 > 本项目封装了一套可用于爬取JM的Python API.
 > 
 > 你可以通过简单的几行Python代码，实现下载JM上的本子到本地，并且是处理好的图片。
 > 
+> **🧭 快速指路**
+> - [教程：使用 GitHub Actions 下载禁漫本子](./assets/docs/sources/tutorial/1_github_actions.md)
+> - [教程：导出并下载你的禁漫收藏夹数据](./assets/docs/sources/tutorial/10_export_favorites.md)
+> - [塔台广播：欢迎各位机长加入并贡献代码](./.github/CONTRIBUTING.md)
+> 
 > **友情提示：珍爱JM，为了减轻JM的服务器压力，请不要一次性爬取太多本子，西门🙏🙏🙏**.
+> 
 
-[【指路】教程：使用GitHub Actions下载禁漫本子](./assets/docs/sources/tutorial/1_github_actions.md)
 
-[【指路】教程：导出并下载你的禁漫收藏夹数据](./assets/docs/sources/tutorial/10_export_favorites.md)
+![introduction.jpg](./assets/docs/sources/images/introduction.jpg)
 
 https://www.jmapiproxyxxx.one
 ## 项目介绍
@@ -48,12 +59,13 @@ https://www.jmapiproxyxxx.one
 
 ## 安装教程
 
-> ⚠如果你没有安装过Python，需要先安装Python再执行下面的步骤，且版本需要>=3.7（[点我去python官网下载](https://www.python.org/downloads/)）
+> ⚠如果你没有安装过 Python，需要先前往 [Python 官网下载](https://www.python.org/downloads/) 再执行以下步骤。
+>**推荐使用 Python 3.12及以上版本**
 
 * 通过pip官方源安装（推荐，并且更新也是这个命令）
 
   ```shell
-  pip install jmcomic -i https://pypi.org/project -U
+  pip install jmcomic -U
   ```
 * 通过源代码安装
 
@@ -172,19 +184,28 @@ jmcomic 123
     - `硬件占用监控插件`
     - `只下载新章插件`
     - `压缩文件插件`
+    - `客户端代理插件`
     - `下载特定后缀图片插件`
     - `发送QQ邮件插件`
-    - `自动使用浏览器cookies插件`
+    - `日志主题过滤插件`
+    - `自动获取浏览器cookies插件`
     - `导出收藏夹为csv文件插件`
     - `合并所有图片为pdf文件插件`
     - `合并所有图片为长图png插件`
-    - `重复文件检测删除插件`
     - `网页观看本地章节插件`
+    - `订阅更新插件`
+    - `小章节跳过插件`
+    - `重复文件检测删除插件`
+    - `路径字符串替换插件`
+    - `高级重试插件`
+    - `封面下载插件`
 
 ## 使用小说明
 
-* Python >= 3.7，建议3.9以上，因为jmcomic的依赖库可能会不支持3.9以下的版本。
-* 个人项目，文档和示例会有不及时之处，可以Issue提问
+* 推荐使用 **Python 3.12+**，目前最低兼容版本为3.9。
+  > 注意：Python 3.9 及更早版本皆已于 2025 年彻底结束官方生命周期 (EOL)，使用3.9及以下随时有可能遇到第三方库不兼容的问题。
+
+* 个人项目，文档和示例会有不及时之处，可以Issue提问。
 
 ## 项目文件夹介绍
 
